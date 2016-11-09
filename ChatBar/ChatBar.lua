@@ -203,6 +203,15 @@ end
 
 ChatBar_ChatTypes = {
 	{
+		type = "WHISPER",
+		shortText = function() return CHATBAR_WHISPER_ABRV; end,
+		text = function() return CHAT_MSG_WHISPER_INFORM; end,
+		click = ChatBar_WhisperButtonClick,
+		show = function()
+			return (not ChatBar_HiddenButtons[CHAT_MSG_WHISPER_INFORM]);
+		end
+	},
+	{
 		type = "SAY",
 		shortText = function() return CHATBAR_SAY_ABRV; end,
 		text = function() return CHAT_MSG_SAY; end,
@@ -218,6 +227,15 @@ ChatBar_ChatTypes = {
 		click = ChatBar_StandardButtonClick,
 		show = function()
 			return (not ChatBar_HiddenButtons[CHAT_MSG_YELL]);
+		end
+	},
+	{
+		type = "EMOTE",
+		shortText = function() return CHATBAR_EMOTE_ABRV; end,
+		text = function() return CHAT_MSG_EMOTE; end,
+		click = ChatBar_StandardButtonClick,
+		show = function()
+			return (not ChatBar_HiddenButtons[CHAT_MSG_EMOTE]);
 		end
 	},
 	{
@@ -239,6 +257,24 @@ ChatBar_ChatTypes = {
 		end
 	},
 	{
+		type = "RAID_WARNING",
+		shortText = function() return CHATBAR_RW_ABRV; end,
+		text = function() return CHAT_MSG_RAID_WARNING; end,
+		click = ChatBar_StandardButtonClick,
+		show = function()
+			return (not ChatBar_HiddenButtons[CHAT_MSG_RAID_WARNING]);
+		end
+	},
+	{
+		type = "BATTLEGROUND",
+		shortText = function() return CHATBAR_BG_ABRV; end,
+		text = function() return CHAT_MSG_BATTLEGROUND; end,
+		click = ChatBar_StandardButtonClick,
+		show = function()
+			return (not ChatBar_HiddenButtons[CHAT_MSG_BATTLEGROUND]);
+		end
+	},
+	{
 		type = "GUILD",
 		shortText = function() return CHATBAR_GUILD_ABRV; end,
 		text = function() return CHAT_MSG_GUILD; end,
@@ -254,24 +290,6 @@ ChatBar_ChatTypes = {
 		click = ChatBar_StandardButtonClick,
 		show = function()
 			return CanEditOfficerNote() and (not ChatBar_HiddenButtons[CHAT_MSG_OFFICER]);
-		end
-	},
-	{
-		type = "WHISPER",
-		shortText = function() return CHATBAR_WHISPER_ABRV; end,
-		text = function() return CHAT_MSG_WHISPER_INFORM; end,
-		click = ChatBar_WhisperButtonClick,
-		show = function()
-			return (not ChatBar_HiddenButtons[CHAT_MSG_WHISPER_INFORM]);
-		end
-	},
-	{
-		type = "EMOTE",
-		shortText = function() return CHATBAR_EMOTE_ABRV; end,
-		text = function() return CHAT_MSG_EMOTE; end,
-		click = ChatBar_StandardButtonClick,
-		show = function()
-			return (not ChatBar_HiddenButtons[CHAT_MSG_EMOTE]);
 		end
 	},
 	{
@@ -393,7 +411,8 @@ function ChatBar_OnEvent(event)
 			UIFrameFlash(getglobal("ChatBarFrameButton"..ChatBar_BarTypes["CHANNEL"..arg8].."Flash"), .5, .5, 1.1);
 		end
 	elseif (event == "CHAT_MSG_SAY") or (event == "CHAT_MSG_YELL") or (event == "CHAT_MSG_PARTY") or (event == "CHAT_MSG_RAID") or 
-		(event == "CHAT_MSG_GUILD") or (event == "CHAT_MSG_OFFICER") or (event == "CHAT_MSG_WHISPER") or (event == "CHAT_MSG_EMOTE") then
+		(event == "CHAT_MSG_GUILD") or (event == "CHAT_MSG_OFFICER") or (event == "CHAT_MSG_WHISPER") or (event == "CHAT_MSG_EMOTE")
+		or (event == "CHAT_MSG_RAID_WARNING") or (event == "CHAT_MSG_BATTLEGROUND") then
 		--Sea.io.printComma(arg1,arg2,arg3);
 		if (ChatBar_BarTypes[strsub(event,10)]) then
 			UIFrameFlash(getglobal("ChatBarFrameButton"..ChatBar_BarTypes[strsub(event,10)].."Flash"), .5, .5, 1.1);
@@ -923,6 +942,8 @@ function ChatBar_UpdateButtonFlashing()
 		frame:RegisterEvent("CHAT_MSG_YELL");
 		frame:RegisterEvent("CHAT_MSG_PARTY");
 		frame:RegisterEvent("CHAT_MSG_RAID");
+		frame:RegisterEvent("CHAT_MSG_RAID_WARNING");
+		frame:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL");
 		frame:RegisterEvent("CHAT_MSG_GUILD");
 		frame:RegisterEvent("CHAT_MSG_OFFICER");
 		frame:RegisterEvent("CHAT_MSG_WHISPER");
@@ -933,12 +954,13 @@ function ChatBar_UpdateButtonFlashing()
 		frame:UnregisterEvent("CHAT_MSG_YELL");
 		frame:UnregisterEvent("CHAT_MSG_PARTY");
 		frame:UnregisterEvent("CHAT_MSG_RAID");
+		frame:UnregisterEvent("CHAT_MSG_RAID_WARNING");
+		frame:UnregisterEvent("CHAT_MSG_BATTLEGROUND");
 		frame:UnregisterEvent("CHAT_MSG_GUILD");
 		frame:UnregisterEvent("CHAT_MSG_OFFICER");
 		frame:UnregisterEvent("CHAT_MSG_WHISPER");
 		frame:UnregisterEvent("CHAT_MSG_EMOTE");
 		frame:UnregisterEvent("CHAT_MSG_CHANNEL");
-
 	end
 end
 
