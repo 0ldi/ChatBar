@@ -5,7 +5,7 @@ ChatBar - Button Bar for openning chat messages of each type.
 [KarlKFI](https://wow.curseforge.com/addons/project-1579/)
 
 # Showcase
-![](https://legacy.curseforge.com/media/images/2/510/chatbar-vertical-bar.jpg)
+![](http://imagehost.spark-media.ru/i4/2817161C-5A8F-9464-4BDF-0DFAB1501696.png)
 
 # Changelog   		
 * Changed  the channel order	
