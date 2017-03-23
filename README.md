@@ -7,7 +7,8 @@ ChatBar - Button Bar for openning chat messages of each type.
 # Showcase
 ![](http://imagehost.spark-media.ru/i4/2817161C-5A8F-9464-4BDF-0DFAB1501696.png)
 
-# Changelog   		
+# Changelog   
+* Fix for display of the BG button only on battlegrounds, added Localization.ru, fixed Localizations
 * Changed  the channel order	
 * Added Battleground and RaidWarning channels			
 
