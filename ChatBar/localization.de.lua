@@ -58,5 +58,9 @@ if ( GetLocale() == "deDE" ) then
 	CHATBAR_LOCALDEFENSE		= "LokaleVerteidigung";
 	CHATBAR_WORLDDEFENSE		= "WeltVerteidigung";
 	CHATBAR_GUILDRECRUITMENT	= "Gildenrekrutierung";
+	
+	CHATBAR_WSG = "Warsongschlucht";
+	CHATBAR_AB = "Arathibecken";
+	CHATBAR_AV = "Alteractal";
 
 end 

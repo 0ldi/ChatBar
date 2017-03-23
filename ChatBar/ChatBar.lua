@@ -271,7 +271,7 @@ ChatBar_ChatTypes = {
 		text = function() return CHAT_MSG_BATTLEGROUND; end,
 		click = ChatBar_StandardButtonClick,
 		show = function()
-			return (not ChatBar_HiddenButtons[CHAT_MSG_BATTLEGROUND]);
+			return (GetZoneText() == CHATBAR_WSG or GetZoneText() == CHATBAR_AB or GetZoneText() == CHATBAR_AV) and (not ChatBar_HiddenButtons[CHAT_MSG_BATTLEGROUND]);
 		end
 	},
 	{

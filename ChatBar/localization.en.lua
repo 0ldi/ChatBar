@@ -54,3 +54,7 @@ CHATBAR_LFG					= "LookingForGroup";
 CHATBAR_LOCALDEFENSE		= "LocalDefense";
 CHATBAR_WORLDDEFENSE		= "WorldDefense";
 CHATBAR_GUILDRECRUITMENT	= "GuildRecruitment";
+
+CHATBAR_WSG = "Warsong Gulch";
+CHATBAR_AB = "Arathi Basin";
+CHATBAR_AV = "Alterac Valley";

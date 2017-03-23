@@ -59,4 +59,8 @@ CHATBAR_LOCALDEFENSE		= "D\195\169fenseLocale";
 CHATBAR_WORLDDEFENSE		= "D\195\169fenseUniverselle";
 CHATBAR_GUILDRECRUITMENT	= "RecrutementGuilde";
 
+CHATBAR_WSG = "Goulet des Warsong";
+CHATBAR_AB = "Bassin d'Arathi";
+CHATBAR_AV = "Vall\195\169e d'Alterac";
+
 end 
