@@ -10,8 +10,45 @@ Graphics: Vynn
 -Button Bar for openning chat messages of each type.
 
 Change Log:
-v1.0
--Initial Release
+v.2.5
+-Added larger buttons option to options menu
+v2.4
+-Added Simplified Chinese Localization (thanks IceChen)
+-Added new Squares skin (thanks Chianti/Кьянти)
+-Added new skin dropdown (Solid, Squares)
+v2.3
+-Added Traditional Chinese Localization
+-Fixed a bug with Russian Localization
+v2.2
+-Removed SeaPrint usage
+-Made Chronos optional: Reorder Channels is disabled w/o Chronos installed.
+v2.1
+-Added Russian Localization (thanks Старостин Алексей)
+v2.0
+-Added Alternate Artwork (thanks Zseton)
+v1.9
+-Added Spanish Localization (thanks NeKRoMaNT)
+v1.8
+-Added an option to Hide All Buttons
+-Fixed menu not showing a list of hidden buttons
+v1.7
+-Added Raid Warning (A) and Battleground (B) chat
+v1.6
+-Channel Reorder no longer requires Sky
+-toc to 11200
+v1.5
+-Fixed saved variables issue with 1.11 not saving nils
+-Fixed a nill bug with the right-click menu
+v1.4
+-Fixed a nil loading error
+v1.3
+-Fixed nil SetText errors
+-Fixed channel 10 nil errors
+-Added Channel Reorder (from ChannelManager) if you have Sky installed (uses many library functions)
+v1.2
+-VisibilityOptions AutoHide is now smarter and shows whenever ChatBar is sliding or being dragged or the cursor is over its menu
+-Fixed Eclipse onload error
+-Fixed Whisper abreviation
 v1.1
 -Addon Channels Hidden added GuildMap
 -Text has been made Localizable
@@ -23,31 +60,19 @@ v1.1
 -Added Options to hide the each button by chat type or channel name (hide from button menu, show from main sub menu)
 -Added option to use Channel Numbers as text overlay
 -Added VisibilityOptions, however autohide is a bit finicky atm.
-v1.2
--VisibilityOptions AutoHide is now smarter and shows whenever ChatBar is sliding or being dragged or the cursor is over its menu
--Fixed Eclipse onload error
--Fixed Whisper abreviation
-v1.3
--Fixed nil SetText errors
--Fixed channel 10 nil errors
--Added Channel Reorder (from ChannelManager) if you have Sky installed (uses many library functions)
-v1.4
--Fixed a nil loading error
-v1.5
--Fixed saved variables issue with 1.11 not saving nils
--Fixed a nill bug with the right-click menu
-v1.6
--Channel Reorder no longer requires Sky
--toc to 11200
-
+v1.0
+-Initial Release
 ]]--
 
 --------------------------------------------------
 -- Globals
 --------------------------------------------------
 
+CHAT_BAR_BUTTON_SIZE = 16; -- height/width of each button
+CHAT_BAR_EDGE_SIZE = 10; -- amount of space that the bar extends past the first/last button
 CHAT_BAR_MAX_BUTTONS = 20;
 CHAT_BAR_UPDATE_DELAY = 30;
+CHAT_BAR_LARGEBUTTONSCALE = 1.3;
 ChatBar_VerticalDisplay = false;
 ChatBar_AlternateOrientation = false;
 ChatBar_TextOnButtonDisplay = false;
@@ -57,10 +82,13 @@ ChatBar_ButtonText = true;
 ChatBar_TextChannelNumbers = false;
 ChatBar_VerticalDisplay_Sliding = false;
 ChatBar_AlternateDisplay_Sliding = false;
+ChatBar_LargeButtons_Sliding = false;
 ChatBar_HideSpecialChannels = true;
 ChatBar_LastTell = nil;
 ChatBar_StoredStickies = { };
 ChatBar_HiddenButtons = { };
+ChatBar_AltArtDirs = { "SkinSolid", "SkinSquares" };
+ChatBar_ButtonScale = 1;
 
 --------------------------------------------------
 -- Retell Hook
@@ -258,21 +286,21 @@ ChatBar_ChatTypes = {
 	},
 	{
 		type = "RAID_WARNING",
-		shortText = function() return CHATBAR_RW_ABRV; end,
+		shortText = function() return CHATBAR_RAID_WARNING_ABRV; end,
 		text = function() return CHAT_MSG_RAID_WARNING; end,
 		click = ChatBar_StandardButtonClick,
 		show = function()
-			return (not ChatBar_HiddenButtons[CHAT_MSG_RAID_WARNING]);
+			return (GetNumRaidMembers() > 0) and (IsRaidLeader() or IsRaidOfficer()) and (not ChatBar_HiddenButtons[CHAT_MSG_RAID_WARNING]);
 		end
 	},
 	{
 		type = "BATTLEGROUND",
-		shortText = function() return CHATBAR_BG_ABRV; end,
+		shortText = function() return CHATBAR_BATTLEGROUND_ABRV; end,
 		text = function() return CHAT_MSG_BATTLEGROUND; end,
 		click = ChatBar_StandardButtonClick,
 		show = function()
-			return (GetZoneText() == CHATBAR_WSG or GetZoneText() == CHATBAR_AB or GetZoneText() == CHATBAR_AV) and (not ChatBar_HiddenButtons[CHAT_MSG_BATTLEGROUND]);
-		end
+		return (GetZoneText() == CHATBAR_WSG or GetZoneText() == CHATBAR_AB or GetZoneText() == CHATBAR_AV) and (not ChatBar_HiddenButtons[CHAT_MSG_BATTLEGROUND]);
+		end	
 	},
 	{
 		type = "GUILD",
@@ -410,15 +438,10 @@ function ChatBar_OnEvent(event)
 		if (ChatBar_BarTypes["CHANNEL"..arg8]) then
 			UIFrameFlash(getglobal("ChatBarFrameButton"..ChatBar_BarTypes["CHANNEL"..arg8].."Flash"), .5, .5, 1.1);
 		end
-	elseif (event == "CHAT_MSG_SAY") or (event == "CHAT_MSG_YELL") or (event == "CHAT_MSG_PARTY") or (event == "CHAT_MSG_RAID") or 
-		(event == "CHAT_MSG_GUILD") or (event == "CHAT_MSG_OFFICER") or (event == "CHAT_MSG_WHISPER") or (event == "CHAT_MSG_EMOTE")
-		or (event == "CHAT_MSG_RAID_WARNING") or (event == "CHAT_MSG_BATTLEGROUND") then
-		--Sea.io.printComma(arg1,arg2,arg3);
-		if (ChatBar_BarTypes[strsub(event,10)]) then
-			UIFrameFlash(getglobal("ChatBarFrameButton"..ChatBar_BarTypes[strsub(event,10)].."Flash"), .5, .5, 1.1);
-		end
 	elseif ( event == "VARIABLES_LOADED" ) then
+		ChatBar_UpdateArt();
 		ChatBar_UpdateButtonOrientation();
+		ChatBar_UpdateButtonSizes();
 		ChatBar_UpdateButtonFlashing();
 		ChatBar_UpdateBarBorder();
 		ChatBar_UpdateButtonText();
@@ -428,6 +451,11 @@ function ChatBar_OnEvent(event)
 			if (enabled) then
 				ChatTypeInfo[chatType].sticky = enabled;
 			end
+		end
+	else
+		--Sea.io.printComma(arg1,arg2,arg3);
+		if (ChatBar_BarTypes[strsub(event,10)]) then
+			UIFrameFlash(getglobal("ChatBarFrameButton"..ChatBar_BarTypes[strsub(event,10)].."Flash"), .5, .5, 1.1);
 		end
 	end
 end
@@ -445,13 +473,16 @@ function ChatBar_OnUpdate(elapsed)
 			ChatBar_SetSize(this.endsize);
 			ChatBarFrame.isSliding = nil;
 			this.velocity = 0;
-			if (ChatBar_VerticalDisplay_Sliding or ChatBar_AlternateDisplay_Sliding) and (this:GetWidth() <= 17) and (this:GetHeight() <= 17) then
+			if (ChatBar_VerticalDisplay_Sliding or ChatBar_AlternateDisplay_Sliding or ChatBar_LargeButtons_Sliding) and (this:GetWidth() <= 17) and (this:GetHeight() <= 17) then
 				if (ChatBar_VerticalDisplay_Sliding) then
 					ChatBar_VerticalDisplay_Sliding = nil;
 					ChatBar_Toggle_VerticalButtonOrientation();
 				elseif (ChatBar_AlternateDisplay_Sliding) then
 					ChatBar_AlternateDisplay_Sliding = nil;
 					ChatBar_Toggle_AlternateButtonOrientation();
+				elseif (ChatBar_LargeButtons_Sliding) then
+					ChatBar_LargeButtons_Sliding = nil;
+					ChatBar_Toggle_LargeButtons();
 				end
 				ChatBar_UpdateOrientationPoint();
 			else
@@ -482,7 +513,7 @@ function ChatBar_OnUpdate(elapsed)
 		local frame, init, final, step;
 		for i=1, CHAT_BAR_MAX_BUTTONS do
 			frame = getglobal("ChatBarFrameButton".. i);
-			if (currSize >= i*16+18) then
+			if (currSize >= i*(CHAT_BAR_BUTTON_SIZE*ChatBar_ButtonScale)+18) then
 				frame:Show();
 			else
 				frame:Hide();
@@ -591,6 +622,8 @@ function ChatBar_LoadDropDownMenu()
 		ChatBar_CreateFrameMenu();
 	elseif (UIDROPDOWNMENU_MENU_VALUE == "HiddenButtonsMenu") then
 		ChatBar_CreateHiddenButtonsMenu();
+	elseif (UIDROPDOWNMENU_MENU_VALUE == "AltArtMenu") then
+		ChatBar_CreateAltArtMenu();
 	else
 		ChatBar_CreateButtonMenu();
 	end
@@ -605,6 +638,15 @@ function ChatBar_CreateFrameMenu()
 	info.isTitle = 1;
 	UIDropDownMenu_AddButton(info, UIDROPDOWNMENU_MENU_LEVEL);
 	
+	--Large Buttons
+	local info = {};
+	info.text = CHATBAR_MENU_MAIN_LARGE;
+	info.func = ChatBar_Toggle_LargeButtonsSlide;
+	if (ChatBar_ButtonScale > 1) then
+		info.checked = 1;
+	end
+	UIDropDownMenu_AddButton(info, UIDROPDOWNMENU_MENU_LEVEL);
+
 	--Vertical
 	local info = {};
 	info.text = CHATBAR_MENU_MAIN_VERTICAL;
@@ -623,6 +665,13 @@ function ChatBar_CreateFrameMenu()
 	end
 	UIDropDownMenu_AddButton(info, UIDROPDOWNMENU_MENU_LEVEL);
 	
+	--Alt Art
+	local info = {};
+	info.text = CHATBAR_MENU_MAIN_ALTART;
+	info.hasArrow = 1;
+	info.value = "AltArtMenu";
+	UIDropDownMenu_AddButton(info, UIDROPDOWNMENU_MENU_LEVEL);
+
 	--Text On Buttons
 	local info = {};
 	info.text = CHATBAR_MENU_MAIN_TEXTONBUTTONS;
@@ -682,7 +731,22 @@ function ChatBar_CreateFrameMenu()
 	end
 	UIDropDownMenu_AddButton(info, UIDROPDOWNMENU_MENU_LEVEL);
 	
-	if (ChatBar_GetTableSize(ChatBar_HiddenButtons) > 0) then
+	--Hide All
+	local info = {};
+	info.text = CHATBAR_MENU_MAIN_HIDEALL;
+	info.func = ChatBar_Toggle_HideAllButtons;
+	if (ChatBar_HideAllButtons) then
+		info.checked = 1;
+	end
+	UIDropDownMenu_AddButton(info, UIDROPDOWNMENU_MENU_LEVEL);
+
+	local size = 0;
+	for _, v in pairs(ChatBar_HiddenButtons) do
+		if (v) then
+			size = size+1
+		end
+	end
+	if (size > 0) then
 		--Show Hidden Buttons
 		local info = {};
 		info.text = CHATBAR_MENU_MAIN_HIDDENBUTTONS;
@@ -701,13 +765,15 @@ function ChatBar_CreateFrameMenu()
 	end
 	UIDropDownMenu_AddButton(info, UIDROPDOWNMENU_MENU_LEVEL);
 	
-	if (ChatBar_ReorderChannels) then
-		--Reorder Channels
-		local info = {};
-		info.text = CHATBAR_MENU_MAIN_REORDER;
-		info.func = ChatBar_ReorderChannels;
-		UIDropDownMenu_AddButton(info, UIDROPDOWNMENU_MENU_LEVEL);
+	--Reorder Channels
+	local info = {};
+	info.text = CHATBAR_MENU_MAIN_REORDER;
+	if (not Chronos) then
+		info.text = info.text..CHATBAR_MENU_MAIN_REQCHRONOS
+		info.disabled = 1;
 	end
+	info.func = ChatBar_ReorderChannels;
+	UIDropDownMenu_AddButton(info, UIDROPDOWNMENU_MENU_LEVEL);
 end
 
 function ChatBar_CreateHiddenButtonsMenu()
@@ -718,6 +784,20 @@ function ChatBar_CreateHiddenButtonsMenu()
 		local ctype = k;
 		info.func = function() ChatBar_HiddenButtons[ctype]=nil ChatBarFrame.count = 0; end;
 		info.notCheckable = 1;
+		UIDropDownMenu_AddButton(info, UIDROPDOWNMENU_MENU_LEVEL);
+	end
+end
+
+function ChatBar_CreateAltArtMenu()
+	for k,v in pairs(ChatBar_AltArtDirs) do
+		--Show Button
+		local info = {};
+		info.text = getglobal("CHATBAR_SKIN"..k);
+		local skinIndex = k;
+		info.func = function() ChatBar_AltArt=skinIndex; ChatBar_UpdateArt(); end;
+		if (ChatBar_AltArt == k) then
+			info.checked = 1;
+		end
 		UIDropDownMenu_AddButton(info, UIDROPDOWNMENU_MENU_LEVEL);
 	end
 end
@@ -827,30 +907,32 @@ function ChatBar_UpdateButtons()
 	ChatBar_BarTypes = {};
 	local i = 1;
 	local buttonIndex = 1;
-	while (ChatBar_ChatTypes[i]) and (buttonIndex <= CHAT_BAR_MAX_BUTTONS) do
-		if (ChatBar_ChatTypes[i].show()) then
-			local info=ChatTypeInfo[ChatBar_ChatTypes[i].type];
-			ChatBar_BarTypes[ChatBar_ChatTypes[i].type] = buttonIndex;
-			getglobal("ChatBarFrameButton".. buttonIndex.."Highlight"):SetVertexColor(info.r, info.g, info.b);
-			getglobal("ChatBarFrameButton".. buttonIndex.."Flash"):SetVertexColor(info.r, info.g, info.b);
-			getglobal("ChatBarFrameButton".. buttonIndex.."Center"):SetVertexColor(info.r, info.g, info.b);
-			getglobal("ChatBarFrameButton".. buttonIndex.."Text"):SetText(ChatBar_ChatTypes[i].shortText());
-			getglobal("ChatBarFrameButton".. buttonIndex).ChatID = i;
-			--getglobal("ChatBarFrameButton".. buttonIndex):Show();
-			buttonIndex = buttonIndex+1;
+	if (not ChatBar_HideAllButtons) then
+		while (ChatBar_ChatTypes[i]) and (buttonIndex <= CHAT_BAR_MAX_BUTTONS) do
+			if (ChatBar_ChatTypes[i].show()) then
+				local info=ChatTypeInfo[ChatBar_ChatTypes[i].type];
+				ChatBar_BarTypes[ChatBar_ChatTypes[i].type] = buttonIndex;
+				getglobal("ChatBarFrameButton".. buttonIndex.."Highlight"):SetVertexColor(info.r, info.g, info.b);
+				getglobal("ChatBarFrameButton".. buttonIndex.."Flash"):SetVertexColor(info.r, info.g, info.b);
+				getglobal("ChatBarFrameButton".. buttonIndex.."Center"):SetVertexColor(info.r, info.g, info.b);
+				getglobal("ChatBarFrameButton".. buttonIndex.."Text"):SetText(ChatBar_ChatTypes[i].shortText());
+				getglobal("ChatBarFrameButton".. buttonIndex).ChatID = i;
+				--getglobal("ChatBarFrameButton".. buttonIndex):Show();
+				buttonIndex = buttonIndex+1;
+			end
+			i = i+1;
 		end
-		i = i+1;
 	end
-	local size = (buttonIndex-1)*16+20;
+	local size = (buttonIndex-1)*(CHAT_BAR_BUTTON_SIZE*ChatBar_ButtonScale)+20;
 	if (ChatBar_VerticalDisplay) then
-		ChatBarFrame:SetWidth(16);
+		ChatBarFrame:SetWidth(CHAT_BAR_BUTTON_SIZE);
 		if (ChatBarFrame:GetTop()) then
 			ChatBar_StartSlidingTo(size);
 		else
 			ChatBarFrame:SetHeight(size);
 		end
 	else
-		ChatBarFrame:SetHeight(16);
+		ChatBarFrame:SetHeight(CHAT_BAR_BUTTON_SIZE);
 		if (ChatBarFrame:GetRight()) then
 			ChatBar_StartSlidingTo(size);
 		else
@@ -874,9 +956,12 @@ function ChatBar_StartSlidingTo(size)
 	ChatBarFrame.isSliding = true;
 end
 
-function ChatBar_PrintSlideInfo()
-	Sea.io.printComma(ChatBarFrame.isSliding, ChatBarFrame.endsize, ChatBarFrame.velocity);
+function ChatBar_UpdateButtonSizes()
+	for i = 1, CHAT_BAR_MAX_BUTTONS do
+		getglobal("ChatBarFrameButton"..i):SetScale(ChatBar_ButtonScale);
+	end
 end
+
 
 function ChatBar_UpdateButtonOrientation()
 	local button = ChatBarFrameButton1;
@@ -884,9 +969,9 @@ function ChatBar_UpdateButtonOrientation()
 	button.Text:ClearAllPoints();
 	if (ChatBar_VerticalDisplay) then
 		if (ChatBar_AlternateOrientation) then
-			button:SetPoint("TOP", "ChatBarFrame", "TOP", 0, -10);
+			button:SetPoint("TOP", "ChatBarFrame", "TOP", 0, (-CHAT_BAR_EDGE_SIZE/ChatBar_ButtonScale));
 		else
-			button:SetPoint("BOTTOM", "ChatBarFrame", "BOTTOM", 0, 10);
+			button:SetPoint("BOTTOM", "ChatBarFrame", "BOTTOM", 0, (CHAT_BAR_EDGE_SIZE/ChatBar_ButtonScale));
 		end
 		if (ChatBar_TextOnButtonDisplay) then
 			button.Text:SetPoint("CENTER", button);
@@ -895,9 +980,9 @@ function ChatBar_UpdateButtonOrientation()
 		end
 	else
 		if (ChatBar_AlternateOrientation) then
-			button:SetPoint("RIGHT", "ChatBarFrame", "RIGHT", -10, 0);
+			button:SetPoint("RIGHT", "ChatBarFrame", "RIGHT", (-CHAT_BAR_EDGE_SIZE/ChatBar_ButtonScale), 0);
 		else
-			button:SetPoint("LEFT", "ChatBarFrame", "LEFT", 10, 0);
+			button:SetPoint("LEFT", "ChatBarFrame", "LEFT", (CHAT_BAR_EDGE_SIZE/ChatBar_ButtonScale), 0);
 		end
 		if (ChatBar_TextOnButtonDisplay) then
 			button.Text:SetPoint("CENTER", button);
@@ -943,7 +1028,7 @@ function ChatBar_UpdateButtonFlashing()
 		frame:RegisterEvent("CHAT_MSG_PARTY");
 		frame:RegisterEvent("CHAT_MSG_RAID");
 		frame:RegisterEvent("CHAT_MSG_RAID_WARNING");
-		frame:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL");
+		frame:RegisterEvent("CHAT_MSG_BATTLEGROUND");
 		frame:RegisterEvent("CHAT_MSG_GUILD");
 		frame:RegisterEvent("CHAT_MSG_OFFICER");
 		frame:RegisterEvent("CHAT_MSG_WHISPER");
@@ -978,22 +1063,63 @@ function ChatBar_Reset()
 	ChatBarFrame:SetUserPlaced(0);
 end
 
+function ChatBar_UpdateArt()
+	if type(ChatBar_AltArt) == "boolean" or ChatBar_AltArt == nil or not ChatBar_AltArtDirs[ChatBar_AltArt] then
+		ChatBar_AltArt = 1;
+	end
+	local dir = ChatBar_AltArtDirs[ChatBar_AltArt]
+	
+	for i=1, 20 do
+		getglobal("ChatBarFrameButton"..i.."UpTex_Spec"):SetTexture("Interface\\AddOns\\ChatBar\\"..dir.."\\ChanButton_Up_Spec");
+		getglobal("ChatBarFrameButton"..i.."DownTex_Spec"):SetTexture("Interface\\AddOns\\ChatBar\\"..dir.."\\ChanButton_Down_Spec");
+		getglobal("ChatBarFrameButton"..i.."Flash"):SetTexture("Interface\\AddOns\\ChatBar\\"..dir.."\\ChanButton_Glow_Alpha");
+		
+		getglobal("ChatBarFrameButton"..i.."Center"):SetTexture("Interface\\AddOns\\ChatBar\\"..dir.."\\ChanButton_Center");
+		getglobal("ChatBarFrameButton"..i.."Background"):SetTexture("Interface\\AddOns\\ChatBar\\"..dir.."\\ChanButton_BG");
+		
+		getglobal("ChatBarFrameButton"..i.."UpTex_Shad"):SetTexture("Interface\\AddOns\\ChatBar\\"..dir.."\\ChanButton_Up_Shad");
+		getglobal("ChatBarFrameButton"..i.."DownTex_Shad"):SetTexture("Interface\\AddOns\\ChatBar\\"..dir.."\\ChanButton_Down_Shad");
+		getglobal("ChatBarFrameButton"..i.."Highlight"):SetTexture("Interface\\AddOns\\ChatBar\\"..dir.."\\ChanButton_Glow_Alpha");
+	end
+	
+	ChatBarFrameBackground:SetBackdrop({
+		edgeFile = "Interface\\AddOns\\ChatBar\\"..dir.."\\ChatBarBorder";
+		bgFile = "Interface\\AddOns\\ChatBar\\"..dir.."\\BlackBg";
+		tile = true, tileSize = 8, edgeSize = 8;
+		insets = { left = 8, right = 8, top = 8, bottom = 8 };
+	});
+end
+
 --------------------------------------------------
 -- Configuration Functions
 --------------------------------------------------
 
+function ChatBar_Toggle_LargeButtonsSlide()
+	if not ChatBarFrame.isMoving then
+		ChatBar_LargeButtons_Sliding = true;
+		ChatBar_StartSlidingTo(CHAT_BAR_BUTTON_SIZE);
+	end
+end
+
 function ChatBar_Toggle_VerticalButtonOrientationSlide()
 	if (not ChatBarFrame.isMoving) then
 		ChatBar_VerticalDisplay_Sliding = true;
-		ChatBar_StartSlidingTo(16);
+		ChatBar_StartSlidingTo(CHAT_BAR_BUTTON_SIZE);
 	end
 end
 
 function ChatBar_Toggle_AlternateButtonOrientationSlide()
 	if (not ChatBarFrame.isMoving) then
 		ChatBar_AlternateDisplay_Sliding = true;
-		ChatBar_StartSlidingTo(16);
+		ChatBar_StartSlidingTo(CHAT_BAR_BUTTON_SIZE);
 	end
+end
+
+function ChatBar_Toggle_LargeButtons()
+	ChatBar_ButtonScale = (ChatBar_ButtonScale == 1 and CHAT_BAR_LARGEBUTTONSCALE) or 1;
+	ChatBar_UpdateButtonSizes();
+	ChatBar_UpdateButtonOrientation();
+	ChatBar_UpdateButtons();
 end
 
 function ChatBar_Toggle_VerticalButtonOrientation()
@@ -1024,13 +1150,13 @@ function ChatBar_UpdateOrientationPoint(expanded)
 			end
 		else
 			if (ChatBar_AlternateOrientation) then
-				x = ChatBarFrame:GetLeft()+16;
-				y = ChatBarFrame:GetBottom()+16;
+				x = ChatBarFrame:GetLeft()+CHAT_BAR_BUTTON_SIZE;
+				y = ChatBarFrame:GetBottom()+CHAT_BAR_BUTTON_SIZE;
 				ChatBarFrame:ClearAllPoints();
 				ChatBarFrame:SetPoint("TOPRIGHT", "UIParent", "BOTTOMLEFT", x, y);
 			else
-				x = ChatBarFrame:GetRight()-16;
-				y = ChatBarFrame:GetTop()-16;
+				x = ChatBarFrame:GetRight()-CHAT_BAR_BUTTON_SIZE;
+				y = ChatBarFrame:GetTop()-CHAT_BAR_BUTTON_SIZE;
 				ChatBarFrame:ClearAllPoints();
 				ChatBarFrame:SetPoint("BOTTOMLEFT", "UIParent", "BOTTOMLEFT", x, y);
 			end
@@ -1047,49 +1173,34 @@ function ChatBar_UpdateOrientationPoint(expanded)
 end
 
 function ChatBar_Toggle_AlternateButtonOrientation()
-	if (ChatBar_AlternateOrientation) then
-		ChatBar_AlternateOrientation = false;
-	else
-		ChatBar_AlternateOrientation = true;
-	end
+	ChatBar_AlternateOrientation = not ChatBar_AlternateOrientation;
 	--ChatBar_UpdateOrientationPoint();
 	ChatBar_UpdateButtonOrientation();
 	ChatBar_UpdateButtons();
 end
 
 function ChatBar_Toggle_TextOrientation()
-	if (ChatBar_TextOnButtonDisplay) then
-		ChatBar_TextOnButtonDisplay = false;
-	else
-		ChatBar_TextOnButtonDisplay = true;
-	end
+	ChatBar_TextOnButtonDisplay = not ChatBar_TextOnButtonDisplay;
 	ChatBar_UpdateButtonOrientation();
 end
 
 function ChatBar_Toggle_ButtonFlashing()
-	if (ChatBar_ButtonFlashing) then
-		ChatBar_ButtonFlashing = false;
-	else
-		ChatBar_ButtonFlashing = true;
-	end
+	ChatBar_ButtonFlashing = not ChatBar_ButtonFlashing;
 	ChatBar_UpdateButtonFlashing();
 end
 
 function ChatBar_Toggle_BarBorder()
-	if (ChatBar_BarBorder) then
-		ChatBar_BarBorder = false;
-	else
-		ChatBar_BarBorder = true;
-	end
+	ChatBar_BarBorder = not ChatBar_BarBorder;
 	ChatBar_UpdateBarBorder();
 end
 
 function ChatBar_Toggle_HideSpecialChannels()
-	if (ChatBar_HideSpecialChannels) then
-		ChatBar_HideSpecialChannels = false;
-	else
-		ChatBar_HideSpecialChannels = true;
-	end
+	ChatBar_HideSpecialChannels = not ChatBar_HideSpecialChannels;
+	ChatBar_UpdateButtons();
+end
+
+function ChatBar_Toggle_HideAllButtons()
+	ChatBar_HideAllButtons = not ChatBar_HideAllButtons
 	ChatBar_UpdateButtons();
 end
 
@@ -1108,20 +1219,12 @@ function ChatBar_UpdateButtonText()
 end
 
 function ChatBar_Toggle_ButtonText()
-	if (ChatBar_ButtonText) then
-		ChatBar_ButtonText = false;
-	else
-		ChatBar_ButtonText = true;
-	end
+	ChatBar_ButtonText = not ChatBar_ButtonText;
 	ChatBar_UpdateButtonText();
 end
 
 function ChatBar_Toggle_TextChannelNumbers()
-	if (ChatBar_TextChannelNumbers) then
-		ChatBar_TextChannelNumbers = false;
-	else
-		ChatBar_TextChannelNumbers = true;
-	end
+	ChatBar_TextChannelNumbers = not ChatBar_TextChannelNumbers;
 	ChatBar_UpdateButtons();
 end
 
@@ -1129,19 +1232,16 @@ end
 -- Helper Functions
 --------------------------------------------------
 
-function ChatBar_GetTableSize(t)
-	local i=0;
-	for k,v in t do
-		if (k and v) then i=i+1 end;
-	end
-	return i;
-end
-
 function ChatBar_GetFirstWord(s)
 	local firstWord, count = gsub(s, "%s.*", "")
 	return firstWord;
 end
 
+local function print(text)
+	local color = ChatTypeInfo["SYSTEM"]
+	local frame = SELECTED_CHAT_FRAME or DEFAULT_CHAT_FRAME
+	frame:AddMessage(text, color.r, color.g, color.b)
+end
 
 --------------------------------------------------
 -- Reorder Channels
@@ -1186,7 +1286,7 @@ CHATBAR_CAPITAL_CITIES = {
 --
 function ChatBar_ReorderChannels()
 	if UnitOnTaxi("player") then
-		Sea.io.printfc(SELECTED_CHAT_FRAME,  ChatTypeInfo["SYSTEM"], CHATBAR_REORDER_FLIGHT_FAIL);
+		print(CHATBAR_REORDER_FLIGHT_FAIL);
 		-- For some reason channels do not register join/leave in a reasonable amount of time while in transit.
 		return;
 	end
@@ -1238,9 +1338,9 @@ function ChatBar_ReorderChannels()
 	end
 	
 	--Sea.io.printTable(newChannelOrder);
-	Sea.io.print(CHATBAR_REORDER_START);
+	print(CHATBAR_REORDER_START);
 	Chronos.schedule(.6, ChatBar_joinChannelsInOrder, newChannelOrder);
-	Chronos.schedule(1.2, function() Sea.io.print(CHATBAR_REORDER_END); end );
+	Chronos.schedule(1.2, function() print(CHATBAR_REORDER_END); end );
 	Chronos.schedule(2, ListChannels );
 end
 
@@ -1276,4 +1376,3 @@ function ChatBar_leaveExtraChannels(newChannelOrder)
 	end
 
 end
-

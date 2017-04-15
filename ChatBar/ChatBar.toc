@@ -1,13 +1,13 @@
 ## Interface: 11200
 ## Title: ChatBar
-## Title-deDE: Chat-Leiste
 ## Notes: Button Bar for openning chat messages of each type.
+## Notes-ruRU: Панель кнопок для открытия сообщений каждого типа.
 ## Notes-deDE: Button-Leiste zum Senden von Chatnachrichten jedes Typs.
-## Author: AnduinLothar
+## Notes-frFR: Barre de boutons pour ouvrir les message de discussions de chaque type.
+## Notes-esES: Barra de botones para abrir los mensajes de chat de cada tipo.
+## Author: AnduinLothar, Lichery
+## Version: 2.5
 ## OptionalDeps: VisibilityOptions
 ## SavedVariablesPerCharacter: ChatBar_VerticalDisplay, ChatBar_AlternateOrientation, ChatBar_HideSpecialChannels, ChatBar_TextOnButtonDisplay, ChatBar_ButtonFlashing, ChatBar_BarBorder, ChatBar_ButtonText, ChatBar_StoredStickies, ChatBar_HiddenButtons, ChatBar_TextChannelNumbers
-localization.en.lua
-localization.de.lua
-localization.fr.lua
-ChatBar.lua
+
 ChatBar.xml
