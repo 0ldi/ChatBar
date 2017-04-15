@@ -5,10 +5,32 @@ ChatBar - Button Bar for openning chat messages of each type.
 [KarlKFI](https://wow.curseforge.com/addons/project-1579/)
 
 # Showcase
-![](http://imagehost.spark-media.ru/i4/2817161C-5A8F-9464-4BDF-0DFAB1501696.png)
+![](http://imagehost.spark-media.ru/iu/53/B0/53B05AE4-9628-7F4E-2C47-FB3A5C11E190.png)
 
 # Changelog   
-* Fix for display of the BG button only on battlegrounds, added Localization.ru, fixed Localizations
+Thx [Lichery](https://github.com/Lichery) for updates:
+* v.2.5   
+-Added larger buttons option to options menu    
+* v2.4    
+-Added Simplified Chinese Localization (thanks IceChen)   
+-Added new Squares skin (thanks Chianti/Кьянти)   
+-Added new skin dropdown (Solid, Squares)   
+* v2.3    
+-Added Traditional Chinese Localization   
+-Fixed a bug with Russian Localization    
+* v2.2    
+-Removed SeaPrint usage   
+-Made Chronos optional: Reorder Channels is disabled w/o Chronos installed.   
+* v2.1    
+-Added Russian Localization (thanks Старостин Алексей)    
+* v2.0    
+-Added Alternate Artwork (thanks Zseton)    
+* v1.9    
+-Added Spanish Localization (thanks NeKRoMaNT)    
+* v1.8    
+-Added an option to Hide All Buttons    
+-Fixed menu not showing a list of hidden buttons    
+* Fix for display of the BG button only on battlegrounds, added Localization.ru, fixed Localizations    
 * Changed  the channel order	
 * Added Battleground and RaidWarning channels			
 
